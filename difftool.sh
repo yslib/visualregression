@@ -1,7 +1,13 @@
 #!/bin/sh
 
-git diff ImageResult | fzf \
-		--prompt '(ctrl-a to accept change)> ' \
-		--bind 'enter:execute-silent(mkdir /tmp/diffimgtmp; git show HEAD:{} > /tmp/diffimgtmp/tmp.png;compare /tmp/diffimgtmp/tmp.png {} png:- | montage -geometry +4+4 /tmp/diffimgtmp/tmp.png - {} png:- | display -title "res" -;rm -rf /tmp/diffimgtmp/)' \
-		--preview 'mkdir /tmp/diffimgtmp;git show HEAD:{} > /tmp/diffimgtmp/tmp.png; delta <(exiftool {}) <(exiftool /tmp/diffimgtmp/tmp.png)| bat; rm -rf /tmp/diffimgtmp/' \
-		--bind 'ctrl-a:execute-silent(git add {})' \
+DIFF_DIR="ImageResult"
+
+
+TMP_IMG="${PWD}/$(date +%s)-$$.png"
+git diff "$DIFF_DIR" | fzf \
+		--prompt "(ctrl-a to accept)> " \
+		--bind "focus:execute-silent(git show HEAD:{} > "$TMP_IMG")+preview(delta <(exiftool {}) <(exiftool "$TMP_IMG")| bat)" \
+		--bind "enter:execute-silent(compare "$TMP_IMG" {} png:- | montage -geometry +4+4 "$TMP_IMG" - {} png:- | display -title "res" -)" \
+		--bind "ctrl-a:execute-silent(git add {})+reload(git diff ${DIFF_DIR})" \
+
+rm "$TMP_IMG"
